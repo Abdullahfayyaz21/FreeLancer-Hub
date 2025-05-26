@@ -1,0 +1,191 @@
+<?php
+require 'db.php';
+
+$errorMessage = '';
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $role = $_POST['role'] ?? '';
+
+    if ($name && $email && $password && $role) {
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $stmt->store_result();
+
+        if ($stmt->num_rows > 0) {
+            $errorMessage = "Email is already registered.";
+        } else {
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("ssss", $name, $email, $hashedPassword, $role);
+
+            if ($stmt->execute()) {
+                header("Location: login.php");
+                exit;
+            } else {
+                $errorMessage = "Error creating account. Please try again.";
+            }
+        }
+
+        $stmt->close();
+    } else {
+        $errorMessage = "All fields are required.";
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up | Freelancer Hub</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(to top right, #e3f2fd, #f1f8ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .signup-card {
+      width: 100%;
+      max-width: 460px;
+      padding: 2.5rem;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(25px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .signup-card h2 {
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #2c3e50;
+    }
+
+    .input-group-text {
+      background: transparent;
+      border: none;
+      color: #2c3e50;
+    }
+
+    .form-control,
+    .form-select {
+      border-radius: 12px;
+      border: 1px solid #ccd6dd;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+      border-color: #5e9bff;
+      box-shadow: 0 0 0 0.15rem rgba(94, 155, 255, 0.25);
+    }
+
+    .btn-primary {
+      background-color: #5e9bff;
+      border: none;
+      font-weight: 600;
+      padding: 0.75rem;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background-color: #4a8bed;
+      transform: translateY(-1px);
+    }
+
+    .text-muted a {
+      color: #4a8bed;
+      text-decoration: none;
+    }
+
+    .text-muted a:hover {
+      text-decoration: underline;
+    }
+
+    .error-msg {
+      background-color: rgba(255, 0, 0, 0.1);
+      color: #c0392b;
+      border: 1px solid #e74c3c;
+      padding: 10px 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="signup-card">
+    <h2>Join Freelancer Hub</h2>
+
+    <?php if (!empty($errorMessage)): ?>
+      <div class="error-msg"><?= htmlspecialchars($errorMessage) ?></div>
+    <?php endif; ?>
+
+    <form action="signup.php" method="POST">
+      <div class="mb-3 input-group">
+        <span class="input-group-text"><i class="fas fa-user"></i></span>
+        <input type="text" name="name" class="form-control" placeholder="Full Name" required />
+      </div>
+
+      <div class="mb-3 input-group">
+        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+        <input type="email" name="email" class="form-control" placeholder="Email Address" required />
+      </div>
+
+      <div class="mb-3 input-group">
+        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+        <input type="password" name="password" class="form-control" placeholder="Password" required />
+      </div>
+
+      <div class="mb-3 input-group">
+        <span class="input-group-text"><i class="fas fa-briefcase"></i></span>
+        <select name="role" class="form-select" required>
+          <option value="" disabled selected>I am a...</option>
+          <option value="freelancer">Freelancer</option>
+          <option value="client">Client</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-3">Create Account</button>
+    </form>
+
+    <p class="text-center text-muted mt-3">
+      Already have an account? <a href="login.php">Log in</a>
+    </p>
+  </div>
+
+</body>
+</html>

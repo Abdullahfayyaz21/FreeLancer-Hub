@@ -1,0 +1,166 @@
+<?php
+session_start();
+$conn = new mysqli("localhost", "root", "", "freelancer_db");
+
+$error = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+
+    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        if (password_verify($password, $row['password'])) {
+            $_SESSION['user_id'] = $row['id'];
+            $_SESSION['role'] = $row['role'];
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            $error = "Invalid Password";
+        }
+    } else {
+        $error = "User not found!";
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | Freelancer Hub</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(to bottom right, #d0eaff, #e8f4ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 2.5rem;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.45);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-25px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-card h2 {
+      text-align: center;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group-text {
+      background: transparent;
+      border: none;
+      color: #2c3e50;
+    }
+
+    .form-control {
+      border-radius: 12px;
+      background-color: rgba(255, 255, 255, 0.85);
+      border: 1px solid #ccd6dd;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .form-control:focus {
+      border-color: #5e9bff;
+      box-shadow: 0 0 0 0.15rem rgba(94, 155, 255, 0.25);
+    }
+
+    .btn-primary {
+      background-color: #5e9bff;
+      border: none;
+      font-weight: 600;
+      padding: 0.75rem;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background-color: #4a8bed;
+      transform: translateY(-1px);
+    }
+
+    .text-muted a {
+      color: #4a8bed;
+      text-decoration: none;
+    }
+
+    .text-muted a:hover {
+      text-decoration: underline;
+    }
+
+    .alert {
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <h2>Login Here</h2>
+
+    <?php if (!empty($error)): ?>
+      <div class="alert alert-danger text-center"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+
+    <form method="POST" action="login.php">
+      <div class="mb-3 input-group">
+        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+        <input type="email" name="email" class="form-control" placeholder="Email Address" required />
+      </div>
+
+      <div class="mb-3 input-group">
+        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+        <input type="password" name="password" class="form-control" placeholder="Password" required />
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-3">Log In</button>
+    </form>
+
+    <p class="text-center text-muted mt-3">
+      Don't have an account? <a href="signup.php">Sign Up</a>
+    </p>
+  </div>
+
+</body>
+</html>
